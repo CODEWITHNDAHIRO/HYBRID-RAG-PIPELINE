@@ -1,0 +1,16 @@
+.env
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.db
+
+# Scraped/derived corpus content is not committed -- it's copyrighted
+# third-party documentation. Run src/ingest.py to regenerate it locally.
+# See docs/decisions/001-corpus-not-committed.md
+docs_corpus/raw/*
+docs_corpus/processed/*
+!docs_corpus/raw/.gitkeep
+!docs_corpus/processed/.gitkeep
+
+reports/*.html

@@ -60,13 +60,14 @@ def fetch_page(url: str) -> str:
 
 
 def extract_clean_text(html: str) -> tuple[str, str]:
-    """Parses HTML and returns (title, clean_body_text), stripping nav,
-    sidebar, scripts, and other non-content chrome.
+    """Parses HTML and returns (title, markdown_text).
 
-    FastAPI's docs use the MkDocs Material theme, where the actual article
-    content lives inside <article> -- everything outside that (nav bars,
-    table of contents sidebar, footer) is chrome we don't want in our
-    search corpus.
+    Unlike a flat get_text() dump, this walks the article's direct
+    children and preserves structure as lightweight Markdown: headings
+    become '#'/'##'/'###' lines, code blocks stay fenced, list items get
+    a leading '- '. This is what lets strategy 2 (structure-aware
+    chunking) later split along actual section boundaries instead of
+    guessing from raw character counts.
     """
     soup = BeautifulSoup(html, "html.parser")
 
@@ -77,16 +78,42 @@ def extract_clean_text(html: str) -> tuple[str, str]:
     if article is None:
         raise ValueError("Could not find <article> content -- page structure may have changed")
 
-    # Remove elements that aren't real content even within the article
-    # (e.g. "Edit this page" links, embedded nav).
     for unwanted in article.select("nav, .md-source-file, script, style"):
         unwanted.decompose()
 
-    text = article.get_text(separator="\n", strip=True)
-    # Collapse 3+ consecutive newlines down to 2, for readability.
+    heading_prefix = {"h1": "#", "h2": "##", "h3": "###", "h4": "####"}
+    lines = []
+
+    # .find_all(..., recursive=True) walks every descendant in document
+    # order -- we only care about a few tag types, everything else (divs,
+    # spans used purely for styling) is skipped.
+    for tag in article.find_all(["h1", "h2", "h3", "h4", "p", "pre", "li"]):
+        tag_name = tag.name
+
+        if tag_name in heading_prefix:
+            text = tag.get_text(strip=True)
+            if text:
+                lines.append(f"\n{heading_prefix[tag_name]} {text}\n")
+
+        elif tag_name == "pre":
+            code_text = tag.get_text()
+            if code_text.strip():
+                lines.append(f"```\n{code_text.strip()}\n```")
+
+        elif tag_name == "li":
+            text = tag.get_text(strip=True)
+            if text:
+                lines.append(f"- {text}")
+
+        elif tag_name == "p":
+            text = tag.get_text(strip=True)
+            if text:
+                lines.append(text)
+
+    text = "\n".join(lines)
     text = re.sub(r"\n{3,}", "\n\n", text)
 
-    return title, text
+    return title, text.strip()
 
 
 def ingest_all() -> list[IngestedDoc]:

@@ -64,12 +64,21 @@ recursive fallback for oversized sections, validated against a synthetic
 document with an artificially large section). Real corpus run: 432 fixed
 chunks (avg 782 chars) vs [structured count TBD from your run]. ADR 002
 written.
+**Day 3:** Built local embedding generation (`embeddings.py`, sentence-transformers,
+all-MiniLM-L6-v2 — no API key needed, see ADR 003). Built strategy 3, semantic
+chunking (`semantic_chunking.py`): sentence splitting with code-fence-aware
+parsing (caught and fixed a real bug here — original fence detection only
+skipped the ``` marker lines, not the code between them), cosine-similarity
+boundary detection validated against synthetic two-topic vectors before
+touching real data. Real corpus result: 671 semantic chunks, avg 159 chars —
+notably smaller/more numerous than fixed (432 chunks, ~782 chars) or
+structured. Worth investigating: SIMILARITY_THRESHOLD may be too sensitive,
+flagging topic shifts within paragraphs rather than between them. Flagged as
+a tuning task for Day 4.
 
-**Next (Day 3):** Strategy 3 — semantic chunking (embedding-based
-boundary detection). Requires building the embeddings step first (Phase
-1 step 3 in the roadmap), since semantic chunking uses embedding
-similarity to detect topic shifts — so embeddings arrive earlier than
-originally planned, pulled forward to support this.
+**Next (Day 4):** Investigate/tune the semantic chunking threshold, then
+move to embedding all three chunk sets into a vector store (ChromaDB) and
+building the BM25 sparse index — the two halves of hybrid retrieval.
 
 ## Setup
 
@@ -86,7 +95,7 @@ python src/ingest.py   # fetches the real corpus, takes ~10-15 seconds
 - [x] Phase 1, step 2 — Configurable chunking strategies
   - [x] Strategy 1: fixed-size with overlap
   - [x] Strategy 2: structure-aware (heading breadcrumbs, recursive fallback)
-  - [ ] Strategy 3: semantic chunking (embedding-based boundaries)
+  - [x] Strategy 3: semantic chunking (embedding-based boundaries)
 - [ ] Phase 1, step 3 — Embeddings + dense vector store
 - [ ] Phase 1, step 4 — BM25 sparse index + deduplication
 - [ ] Phase 2 — Hybrid retrieval (dense + sparse fusion, reranking)

@@ -15,7 +15,14 @@ from embeddings import embed_texts, cosine_similarity
 # If similarity between consecutive sentences drops below this, treat it
 # as a topic boundary -- start a new chunk. Lower = more sensitive (more,
 # smaller chunks); higher = less sensitive (fewer, larger chunks).
-SIMILARITY_THRESHOLD = 0.5
+#
+# This value (0.042) is NOT arbitrary -- it's the 15th percentile of the
+# real distribution of consecutive-sentence similarities across this
+# corpus, measured by tune_threshold.py. The initial guess of 0.5 was
+# flagging 83.7% of all sentence pairs as "boundaries" (mean similarity
+# in this corpus is only 0.264), producing hundreds of near-useless
+# one-sentence chunks. See ADR 004.
+SIMILARITY_THRESHOLD = 0.042
 
 # Never produce a chunk with fewer than this many sentences -- avoids
 # pathological one-sentence chunks from noisy similarity dips.

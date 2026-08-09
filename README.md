@@ -121,12 +121,21 @@ test queries against the actual corpus returned correct, on-topic results
 for both (dense: query-params page for a query-parameter question;
 sparse: handling-errors page for an HTTPException question). Surfaced the
 text-extraction artifacts noted above during this testing.
+**Day 6:** Built hybrid_search.py — Reciprocal Rank Fusion combining dense
+and sparse results into one ranked list. RRF math validated with a
+synthetic test before running on real data. Real query ("How do I raise
+an HTTPException with a custom status code?") returned 5 results, all
+correctly from handling-errors, all found by *both* dense and sparse
+independently — strong agreement case. Hit and resolved a real workflow
+issue: vector_store.py and bm25_index.py must each be run with an explicit
+strategy argument per new chunking strategy; running without one silently
+defaults to "fixed" rather than erroring, which caused a confusing
+NotFoundError until traced back to the missing explicit argument.
 
-**Next (Day 6):** Fusion layer (Reciprocal Rank Fusion) combining dense +
-sparse results into one ranked list — the step that makes this genuinely
-"hybrid" rather than two separate search systems. Possibly a text-cleanup
-pass first, depending on how much the artifacts affect fusion quality.
-
+**Next (Day 7):** Test a query where dense and sparse likely disagree
+(to see RRF actually resolving conflict, not just confirming consensus),
+add a reranker pass, and address the lingering text-extraction artifacts
+(¶ symbols, heading-bleed, missing spaces).
 ## Setup
 
 ```bash

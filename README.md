@@ -131,13 +131,17 @@ issue: vector_store.py and bm25_index.py must each be run with an explicit
 strategy argument per new chunking strategy; running without one silently
 defaults to "fixed" rather than erroring, which caused a confusing
 NotFoundError until traced back to the missing explicit argument.
+**Day 7:** Fixed the text-extraction artifacts flagged on Day 5-6. Root
+cause: MkDocs Material injects a hidden permalink anchor (renders as ¶)
+inside every heading, which get_text() was collecting as real content;
+and inline elements (<code>, <a>) sitting flush against surrounding text
+were concatenating with zero space ("of404", "requestshttp://"). Fixed by
+removing headerlink anchors before extraction and using an explicit space
+separator + cleanup regex. Validated against synthetic HTML replicating
+the exact real bug patterns before re-running the full pipeline.
 
-**Next (Day 7):** Test a query where dense and sparse likely disagree
-(to see RRF actually resolving conflict, not just confirming consensus),
-add a reranker pass, and address the lingering text-extraction artifacts
-(¶ symbols, heading-bleed, missing spaces).
-## Setup
-
+**Next (Day 8):** Test a query where dense and sparse likely disagree,
+add a reranker pass on top of RRF-fused results.
 ```bash
 git clone https://github.com/CODEWITHNDAHIRO/hybrid-rag-pipeline.git
 cd hybrid-rag-pipeline

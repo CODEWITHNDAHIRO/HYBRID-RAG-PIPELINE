@@ -1,9 +1,6 @@
 """
-Phase 1, step 1: document ingestion.
-
-Fetches a curated list of real FastAPI documentation pages, strips out
-navigation/sidebar/scripts, and saves clean text + metadata locally. This
-is the corpus the rest of the RAG pipeline will index and search over.
+The LLM-facing document ingestion pipeline: fetches real FastAPI
+documentation pages and saves clean, structure-preserved text locally.
 
 Run this yourself locally -- it downloads real pages for your own use,
 same as saving pages from a browser.
@@ -19,10 +16,6 @@ from bs4 import BeautifulSoup
 
 RAW_DIR = Path(__file__).parent.parent / "docs_corpus" / "raw"
 
-# A curated set of FastAPI tutorial/advanced pages, chosen to span several
-# distinct topics -- this matters later for the eval dataset, since we
-# want questions that require finding the *right* topic among several
-# plausible ones, not just the only page that exists.
 PAGES = [
     ("first-steps", "https://fastapi.tiangolo.com/tutorial/first-steps/"),
     ("path-params", "https://fastapi.tiangolo.com/tutorial/path-params/"),
@@ -44,30 +37,46 @@ PAGES = [
 
 @dataclass
 class IngestedDoc:
-    doc_id: str          # stable slug, e.g. "first-steps"
+    doc_id: str
     title: str
     url: str
-    content: str          # cleaned plaintext
+    content: str
     char_count: int
 
 
 def fetch_page(url: str) -> str:
-    """Downloads raw HTML for one page."""
     headers = {"User-Agent": "Mozilla/5.0 (personal RAG portfolio project)"}
     response = requests.get(url, headers=headers, timeout=15)
     response.raise_for_status()
     return response.text
 
 
-def extract_clean_text(html: str) -> tuple[str, str]:
-    """Parses HTML and returns (title, markdown_text).
+def _clean_element_text(tag) -> str:
+    """Extracts text from a tag with a space inserted between every
+    inline sub-element (fixes "of404" / "requestshttp://" style
+    concatenation bugs), then collapses any resulting run of multiple
+    spaces down to one.
+    """
+    text = tag.get_text(separator=" ", strip=True)
+    text = re.sub(r" {2,}", " ", text)
+    # Clean up spacing artifacts the separator can introduce around
+    # punctuation, e.g. "item_id" and the quote around it should not
+    # gain a stray space before a comma/period/closing paren.
+    text = re.sub(r"\s+([,.\)\]:;!?])", r"\1", text)
+    return text
 
-    Unlike a flat get_text() dump, this walks the article's direct
-    children and preserves structure as lightweight Markdown: headings
-    become '#'/'##'/'###' lines, code blocks stay fenced, list items get
-    a leading '- '. This is what lets strategy 2 (structure-aware
-    chunking) later split along actual section boundaries instead of
-    guessing from raw character counts.
+
+def extract_clean_text(html: str) -> tuple[str, str]:
+    """Parses HTML and returns (title, markdown_text), preserving
+    heading/code/list structure while fixing two artifacts found during
+    Day 5-6 retrieval testing:
+
+    1. MkDocs Material injects a hidden "permalink" anchor (rendered as
+       a pilcrow, ¶) inside every heading. Removed before text extraction.
+    2. Inline elements (<code>, <a>) sitting flush against surrounding
+       text with no HTML whitespace were being concatenated with zero
+       space (e.g. "status code of404"). Fixed via _clean_element_text's
+       explicit separator.
     """
     soup = BeautifulSoup(html, "html.parser")
 
@@ -78,20 +87,17 @@ def extract_clean_text(html: str) -> tuple[str, str]:
     if article is None:
         raise ValueError("Could not find <article> content -- page structure may have changed")
 
-    for unwanted in article.select("nav, .md-source-file, script, style"):
+    for unwanted in article.select("nav, .md-source-file, script, style, a.headerlink"):
         unwanted.decompose()
 
     heading_prefix = {"h1": "#", "h2": "##", "h3": "###", "h4": "####"}
     lines = []
 
-    # .find_all(..., recursive=True) walks every descendant in document
-    # order -- we only care about a few tag types, everything else (divs,
-    # spans used purely for styling) is skipped.
     for tag in article.find_all(["h1", "h2", "h3", "h4", "p", "pre", "li"]):
         tag_name = tag.name
 
         if tag_name in heading_prefix:
-            text = tag.get_text(strip=True)
+            text = _clean_element_text(tag)
             if text:
                 lines.append(f"\n{heading_prefix[tag_name]} {text}\n")
 
@@ -101,12 +107,12 @@ def extract_clean_text(html: str) -> tuple[str, str]:
                 lines.append(f"```\n{code_text.strip()}\n```")
 
         elif tag_name == "li":
-            text = tag.get_text(strip=True)
+            text = _clean_element_text(tag)
             if text:
                 lines.append(f"- {text}")
 
         elif tag_name == "p":
-            text = tag.get_text(strip=True)
+            text = _clean_element_text(tag)
             if text:
                 lines.append(text)
 
@@ -129,26 +135,15 @@ def ingest_all() -> list[IngestedDoc]:
             print(f"  FAILED: {e}")
             continue
 
-        doc = IngestedDoc(
-            doc_id=doc_id,
-            title=title,
-            url=url,
-            content=content,
-            char_count=len(content),
-        )
+        doc = IngestedDoc(doc_id=doc_id, title=title, url=url, content=content, char_count=len(content))
         docs.append(doc)
 
-        # Save the clean text
         (RAW_DIR / f"{doc_id}.txt").write_text(content)
         print(f"  Saved {doc.char_count} chars")
-
-        # Be a polite scraper -- don't hammer the server with rapid requests.
         time.sleep(0.5)
 
-    # Save metadata for all docs together, for easy loading later.
     metadata = [asdict(d) for d in docs]
     (RAW_DIR / "_metadata.json").write_text(json.dumps(metadata, indent=2))
-
     return docs
 
 

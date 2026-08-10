@@ -121,6 +121,7 @@ test queries against the actual corpus returned correct, on-topic results
 for both (dense: query-params page for a query-parameter question;
 sparse: handling-errors page for an HTTPException question). Surfaced the
 text-extraction artifacts noted above during this testing.
+
 **Day 6:** Built hybrid_search.py — Reciprocal Rank Fusion combining dense
 and sparse results into one ranked list. RRF math validated with a
 synthetic test before running on real data. Real query ("How do I raise
@@ -131,6 +132,7 @@ issue: vector_store.py and bm25_index.py must each be run with an explicit
 strategy argument per new chunking strategy; running without one silently
 defaults to "fixed" rather than erroring, which caused a confusing
 NotFoundError until traced back to the missing explicit argument.
+
 **Day 7:** Fixed the text-extraction artifacts flagged on Day 5-6. Root
 cause: MkDocs Material injects a hidden permalink anchor (renders as ¶)
 inside every heading, which get_text() was collecting as real content;
@@ -142,6 +144,7 @@ the exact real bug patterns before re-running the full pipeline.
 
 **Next (Day 8):** Test a query where dense and sparse likely disagree,
 add a reranker pass on top of RRF-fused results.
+
 ```bash
 git clone https://github.com/CODEWITHNDAHIRO/hybrid-rag-pipeline.git
 cd hybrid-rag-pipeline
@@ -160,7 +163,7 @@ python src/bm25_index.py structured     # builds + test-queries the sparse index
 - [x] Phase 1, step 2 — Chunking strategies 1 & 2 (fixed-size, structure-aware)
 - [x] Phase 1, step 2b — Semantic chunking (strategy 3) + local embedding model
 - [x] Phase 2, step 1 — Dense retrieval (ChromaDB) + sparse retrieval (BM25)
-- [ ] Phase 2, step 2 — Fusion layer (Reciprocal Rank Fusion) + reranking
+- [x] Phase 2, step 2 — Fusion layer (Reciprocal Rank Fusion) + reranking
 - [ ] Phase 3 — Grounded generation with citation verification
 - [ ] Phase 4 — Evaluation framework (golden Q&A dataset, faithfulness scoring,
       chunking strategy comparison)

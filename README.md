@@ -142,8 +142,24 @@ removing headerlink anchors before extraction and using an explicit space
 separator + cleanup regex. Validated against synthetic HTML replicating
 the exact real bug patterns before re-running the full pipeline.
 
+<<<<<<< HEAD
 **Next (Day 8):** Test a query where dense and sparse likely disagree,
 add a reranker pass on top of RRF-fused results.
+=======
+**Day 8:** Built reranker.py — cross-encoder reranking pass on top of
+RRF-fused results. Unlike our bi-encoder embedding model (query and chunk
+encoded separately, then compared), a cross-encoder reads query+chunk
+together for a more accurate but slower relevance score, so it only runs
+on the small candidate pool from fusion (20), not the full corpus. Logic
+validated with synthetic scores showing correct promotion of a
+lower-RRF-rank-but-more-relevant candidate. Used a deliberately paraphrased
+test query (no exact-vocabulary overlap with the docs) to give dense and
+sparse retrieval a real chance to disagree, unlike Day 6's query.
+
+**Next (Day 9):** [fill in based on real reranker output -- either move to
+Phase 3 grounded generation, or investigate any dense/sparse disagreement
+found today]
+>>>>>>> 4eccafb (Day 8: cross-encoder reranking on top of RRF fusion)
 
 ```bash
 git clone https://github.com/CODEWITHNDAHIRO/hybrid-rag-pipeline.git
@@ -153,8 +169,8 @@ pip install -r requirements.txt
 python src/ingest.py                    # fetches the real corpus (~10-15s)
 python src/chunking.py                  # builds strategies 1 & 2
 python src/semantic_chunking.py         # builds strategy 3
-python src/vector_store.py structured   # builds + test-queries the dense index
-python src/bm25_index.py structured     # builds + test-queries the sparse index
+python src/vector_store.py              # builds + test-queries the dense index
+python src/bm25_index.py                # builds + test-queries the sparse index
 ```
 
 ## Roadmap

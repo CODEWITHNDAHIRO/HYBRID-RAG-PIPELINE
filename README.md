@@ -142,10 +142,6 @@ removing headerlink anchors before extraction and using an explicit space
 separator + cleanup regex. Validated against synthetic HTML replicating
 the exact real bug patterns before re-running the full pipeline.
 
-<<<<<<< HEAD
-**Next (Day 8):** Test a query where dense and sparse likely disagree,
-add a reranker pass on top of RRF-fused results.
-=======
 **Day 8:** Built reranker.py — cross-encoder reranking pass on top of
 RRF-fused results. Unlike our bi-encoder embedding model (query and chunk
 encoded separately, then compared), a cross-encoder reads query+chunk
@@ -156,10 +152,18 @@ lower-RRF-rank-but-more-relevant candidate. Used a deliberately paraphrased
 test query (no exact-vocabulary overlap with the docs) to give dense and
 sparse retrieval a real chance to disagree, unlike Day 6's query.
 
-**Next (Day 9):** [fill in based on real reranker output -- either move to
-Phase 3 grounded generation, or investigate any dense/sparse disagreement
-found today]
->>>>>>> 4eccafb (Day 8: cross-encoder reranking on top of RRF fusion)
+**Day 9 (Phase 3 start):** Built generate.py — grounded generation with
+inline citations. Retrieves + reranks via the full Phase 1-2 pipeline,
+builds numbered source blocks, and prompts Claude to answer using ONLY
+that context with [n] citations, refusing to guess if context is
+insufficient. Citation parsing (regex extraction of [n] markers,
+including multi-citation sentences and deduplication) validated with
+synthetic answer text before running on a real query.
+
+**Next (Day 10):** Citation verification -- checking that each [n]
+citation actually supports the claim it's attached to, not just that the
+number exists (an LLM-as-judge pass, same pattern as Project 1's
+judge.py).
 
 ```bash
 git clone https://github.com/CODEWITHNDAHIRO/hybrid-rag-pipeline.git

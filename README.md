@@ -160,10 +160,13 @@ insufficient. Citation parsing (regex extraction of [n] markers,
 including multi-citation sentences and deduplication) validated with
 synthetic answer text before running on a real query.
 
-**Next (Day 10):** Citation verification -- checking that each [n]
-citation actually supports the claim it's attached to, not just that the
-number exists (an LLM-as-judge pass, same pattern as Project 1's
-judge.py).
+**Day 10 (Phase 3 complete):** Built citation_verification.py — LLM-as-
+judge verification checking whether each cited claim is genuinely
+supported by its source, not just that a citation number exists. Claim-
+splitting logic (sentence-level, citation extraction, multi-citation
+grouping, uncited-sentence skipping) and the 1-indexed-citation-to-
+0-indexed-source mapping both validated with synthetic data before the
+first live end-to-end run.
 
 ```bash
 git clone https://github.com/CODEWITHNDAHIRO/hybrid-rag-pipeline.git
@@ -184,7 +187,7 @@ python src/bm25_index.py                # builds + test-queries the sparse index
 - [x] Phase 1, step 2b — Semantic chunking (strategy 3) + local embedding model
 - [x] Phase 2, step 1 — Dense retrieval (ChromaDB) + sparse retrieval (BM25)
 - [x] Phase 2, step 2 — Fusion layer (Reciprocal Rank Fusion) + reranking
-- [ ] Phase 3 — Grounded generation with citation verification
+- [x] Phase 3 — Grounded generation with citation verification
 - [ ] Phase 4 — Evaluation framework (golden Q&A dataset, faithfulness scoring,
       chunking strategy comparison)
 - [ ] Phase 5 — API + dashboard

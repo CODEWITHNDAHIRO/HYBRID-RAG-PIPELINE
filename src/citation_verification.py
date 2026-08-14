@@ -19,7 +19,7 @@ client = anthropic.Anthropic()
 
 class Claim(BaseModel):
     text: str
-    cited_sources: list[int]   # which source numbers this claim cites, e.g. [1, 3]
+    cited_sources: list[int]
 
 
 class CitationVerdict(BaseModel):
@@ -62,33 +62,87 @@ Mark supported=true only if the source text genuinely contains or \
 directly implies the claim."""
 
 
+def _strip_markdown_structure(answer_text: str) -> str:
+    """Removes Markdown structural lines (headings, horizontal rules,
+    code fences + their content) before sentence-splitting.
+
+    This is the fix for a real bug found on Day 10: naive sentence-
+    splitting on '.', '!', '?' treated the period in a numbered heading
+    like "### 2. With Query Validations" as a sentence boundary,
+    producing a garbage pseudo-claim ("### 2.") that stole a citation
+    marker away from the real sentence it belonged to. Same root cause
+    pattern as the code-fence bug fixed in semantic_chunking.py on Day 7
+    -- naive text processing not accounting for Markdown syntax.
+    """
+    lines = answer_text.split("\n")
+    kept_lines = []
+    inside_code_fence = False
+
+    for line in lines:
+        stripped = line.strip()
+
+        if stripped.startswith("```"):
+            inside_code_fence = not inside_code_fence
+            continue
+        if inside_code_fence:
+            continue
+
+        if re.match(r"^#{1,6}\s", stripped):
+            continue
+        if re.match(r"^(-{3,}|_{3,}|\*{3,})$", stripped):
+            continue
+
+        kept_lines.append(line)
+
+    return "\n".join(kept_lines)
+
+
 def split_answer_into_claims(answer_text: str) -> list[Claim]:
     """Splits an answer into sentence-level claims, each paired with the
-    citation numbers attached to it. A sentence with no [n] markers at
-    all is skipped -- there's nothing to verify if nothing was cited.
+    citation numbers attached to it.
+
+    Two bugs were found and fixed here during real testing (Day 10-11):
+
+    1. Markdown structure (headings, horizontal rules, code fences) was
+       being sentence-split naively, e.g. the period in "### 2. With
+       Query Validations" was mistaken for a sentence boundary,
+       producing a garbage pseudo-claim. Fixed by stripping structural
+       Markdown before sentence-splitting (_strip_markdown_structure).
+
+    2. Even after that fix, a real citation like "...error. [1]" was
+       still being split BETWEEN the period and the bracket, since a
+       naive (?<=[.!?])\\s+ split fires on the whitespace immediately
+       after the period, regardless of what follows. This stranded the
+       citation marker at the start of the next chunk instead of the end
+       of the sentence it belonged to. Fixed by inserting a boundary
+       marker after any trailing citation bracket(s), not immediately
+       after the terminating punctuation -- see the boundary_pattern
+       below. A further edge case (a citation as the very last thing in
+       the text, no trailing whitespace to match against) required
+       padding the text with a trailing newline before processing.
     """
-    # Split on sentence boundaries, similar approach to Project 1's
-    # sentence splitter -- not perfect, good enough for this purpose.
-    sentences = re.split(r"(?<=[.!?])\s+", answer_text.strip())
+    cleaned = _strip_markdown_structure(answer_text)
+    padded = cleaned.strip() + "\n"  # ensures a final citation always has trailing whitespace to match
+
+    # Marks the boundary AFTER "terminator + any trailing [n] citations",
+    # not immediately after the terminator itself.
+    boundary_pattern = re.compile(r"([.!?](?:\s*\[\d+\])*)(\s+)")
+    marked = boundary_pattern.sub(lambda m: m.group(1) + "\x00" + m.group(2), padded)
+    pieces = [p.strip() for p in marked.split("\x00") if p.strip()]
 
     claims = []
-    for sentence in sentences:
-        citation_numbers = [int(n) for n in re.findall(r"\[(\d+)\]", sentence)]
+    for piece in pieces:
+        citation_numbers = [int(n) for n in re.findall(r"\[(\d+)\]", piece)]
         if citation_numbers:
-            # Strip the citation markers themselves out of the claim text
-            # sent to the judge -- we want it judging the substance, not
-            # parsing bracket syntax.
-            clean_text = re.sub(r"\[\d+\]", "", sentence).strip()
-            claims.append(Claim(text=clean_text, cited_sources=sorted(set(citation_numbers))))
+            clean_text = re.sub(r"\[\d+\]", "", piece).strip()
+            clean_text = re.sub(r"\s+", " ", clean_text)
+            if clean_text:
+                claims.append(Claim(text=clean_text, cited_sources=sorted(set(citation_numbers))))
 
     return claims
 
 
 def verify_claim(claim: Claim, sources: list[dict]) -> CitationVerdict:
-    """Checks one claim against its cited source(s) using an LLM judge."""
-    # sources is 0-indexed (list position), citations are 1-indexed
-    # (matching the [1][2] numbering shown to the user) -- this mapping
-    # has to be handled carefully or verification checks the wrong chunk.
     cited_content = "\n\n".join(
         f"Source [{n}]: {sources[n - 1]['content']}"
         for n in claim.cited_sources
@@ -119,7 +173,6 @@ Cited source(s):
 
 
 def verify_all_citations(answer_text: str, sources: list[dict]) -> dict:
-    """Verifies every claim in an answer, returns an aggregate report."""
     claims = split_answer_into_claims(answer_text)
 
     if not claims:

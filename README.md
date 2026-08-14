@@ -168,6 +168,19 @@ grouping, uncited-sentence skipping) and the 1-indexed-citation-to-
 0-indexed-source mapping both validated with synthetic data before the
 first live end-to-end run.
 
+**Day 11:** Fixed citation_verification.py's claim-splitting bug found on
+Day 10. Root cause was two-layered: (1) Markdown headings with numbered
+periods ("### 2. With Query...") were mistaken for sentence boundaries,
+producing a garbage pseudo-claim; (2) even after fixing that, real
+citations like "...error. [1]" were still being split BETWEEN the period
+and the bracket, stranding the citation at the start of the next chunk.
+Fixed via Markdown-structure stripping + a marker-insertion technique
+that places the sentence boundary after trailing citations, not before
+them, plus a trailing-whitespace-padding fix for the edge case of a
+citation being the very last thing in the text. All fixes validated
+against synthetic text replicating the exact real bug before re-running
+on live data.
+
 ```bash
 git clone https://github.com/CODEWITHNDAHIRO/hybrid-rag-pipeline.git
 cd hybrid-rag-pipeline

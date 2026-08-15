@@ -1,0 +1,121 @@
+[
+  {
+    "id": "q-001",
+    "question": "How do I get started with a minimal FastAPI application?",
+    "expected_doc_ids": ["first-steps"],
+    "difficulty": "easy",
+    "notes": "Direct match to the page's core purpose. Baseline sanity check."
+  },
+  {
+    "id": "q-002",
+    "question": "How do I declare a path parameter with type validation?",
+    "expected_doc_ids": ["path-params"],
+    "difficulty": "easy",
+    "notes": "Baseline sanity check for the path-params page."
+  },
+  {
+    "id": "q-003",
+    "question": "How do I make a query parameter required instead of optional?",
+    "expected_doc_ids": ["query-params"],
+    "difficulty": "easy",
+    "notes": "Baseline sanity check. Also the exact query used in Day 9-11 generation testing."
+  },
+  {
+    "id": "q-004",
+    "question": "How do I add a minimum or maximum length constraint to a string query parameter?",
+    "expected_doc_ids": ["query-params-str-validations"],
+    "difficulty": "easy",
+    "notes": "Baseline sanity check for the string-validations page specifically, distinct from plain query-params."
+  },
+  {
+    "id": "q-005",
+    "question": "How do I send data in a request body using a Pydantic model?",
+    "expected_doc_ids": ["body"],
+    "difficulty": "easy",
+    "notes": "Baseline sanity check."
+  },
+  {
+    "id": "q-006",
+    "question": "How does FastAPI's dependency injection system work?",
+    "expected_doc_ids": ["dependencies"],
+    "difficulty": "easy",
+    "notes": "Baseline sanity check."
+  },
+  {
+    "id": "q-007",
+    "question": "How do I implement OAuth2 password-based authentication?",
+    "expected_doc_ids": ["security-first-steps"],
+    "difficulty": "medium",
+    "notes": "Tests whether 'authentication' and 'OAuth2' route correctly to security-first-steps rather than being confused with dependencies (since auth is often implemented via dependencies) -- a real category-boundary test, same idea as Project 1's ADR 003 edge cases."
+  },
+  {
+    "id": "q-008",
+    "question": "How do I allow my API to be called from a different domain in the browser?",
+    "expected_doc_ids": ["cors"],
+    "difficulty": "medium",
+    "notes": "Deliberately does NOT use the term 'CORS' -- tests whether retrieval finds the right page from a plain-language description of the problem, not just keyword match on the acronym."
+  },
+  {
+    "id": "q-009",
+    "question": "How do I run custom code before and after every request?",
+    "expected_doc_ids": ["middleware"],
+    "difficulty": "medium",
+    "notes": "Paraphrased, doesn't use the word 'middleware' -- same reasoning as q-008."
+  },
+  {
+    "id": "q-010",
+    "question": "How do I connect FastAPI to a SQL database?",
+    "expected_doc_ids": ["sql-databases"],
+    "difficulty": "easy",
+    "notes": "Baseline sanity check. Also the page most likely to show chunking-strategy differences, since it's by far the longest (~102k chars, ~164 fixed-size chunks alone)."
+  },
+  {
+    "id": "q-011",
+    "question": "How do I run a task after sending the response, without making the client wait for it?",
+    "expected_doc_ids": ["background-tasks"],
+    "difficulty": "medium",
+    "notes": "Paraphrased description of background tasks without using that exact term."
+  },
+  {
+    "id": "q-012",
+    "question": "How do I organize a large FastAPI app across multiple files?",
+    "expected_doc_ids": ["bigger-applications"],
+    "difficulty": "easy",
+    "notes": "Baseline sanity check."
+  },
+  {
+    "id": "q-013",
+    "question": "How do I write automated tests for my FastAPI endpoints?",
+    "expected_doc_ids": ["testing"],
+    "difficulty": "easy",
+    "notes": "Baseline sanity check."
+  },
+  {
+    "id": "q-014",
+    "question": "How do I return a custom HTTP status code when something goes wrong in my endpoint?",
+    "expected_doc_ids": ["handling-errors"],
+    "difficulty": "easy",
+    "notes": "Baseline sanity check. Same topic as the citation-verification testing query."
+  },
+  {
+    "id": "q-015",
+    "question": "How do I control which fields are included when returning data from an endpoint?",
+    "expected_doc_ids": ["response-model"],
+    "difficulty": "medium",
+    "notes": "Paraphrased -- doesn't use the term 'response_model' directly."
+  },
+  {
+    "id": "q-016",
+    "question": "What's the difference between declaring a parameter as required vs giving it a default value, and where is this explained for both query parameters and request bodies?",
+    "expected_doc_ids": ["query-params", "body"],
+    "difficulty": "hard",
+    "notes": "Multi-hop: the honest answer spans two pages. Tests whether retrieval surfaces both relevant docs, not just the first/most obvious one -- a real stress test of top-k breadth, not just top-1 accuracy."
+  },
+  {
+    "id": "q-017",
+    "question": "If my endpoint needs to both validate an OAuth2 token AND run some setup logic before the request handler executes, how are those two things related in FastAPI?",
+    "expected_doc_ids": ["security-first-steps", "dependencies"],
+    "difficulty": "hard",
+    "notes": "Multi-hop: OAuth2 security in FastAPI is itself implemented as a dependency, so a good answer needs both pages. Tests whether the system captures a real conceptual relationship between two docs, not just independent keyword matches."
+  }
+]
